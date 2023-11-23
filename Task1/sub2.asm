@@ -1,11 +1,11 @@
 .data
-    A:      .float 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0   # Example matrix A (replace with your values)
+    A:      .float 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 8.0, 9.0, 10.0   # Example matrix A (replace with your values)
  
 
     B:      .float 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0   # Example matrix B (replace with your values)
        
 
-    C:      .space 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0                # Space for matrix C (3x3 matrix, each element is 4 bytes)
+    C:      .float 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0                # Space for matrix C (3x3 matrix, each element is 4 bytes)
     array_size:    .word 9  
 .text
 main:
@@ -59,14 +59,17 @@ print_float_array:
         jr $ra    # Return from the function
 
 subtract: 	
-		li $t0, 0 #index counter 
+	li $t0, 0 #index counter 
+        addi $sp $sp -4 
+        sw $ra 0($sp)
+        
         
     # Calculate the number of elements in the matrix (N x N) $t2 has N^2
         mul $t2, $a3, $a3
 
         la $t1 ($a0) # address of matrix A
-		la $t2 ($a1) # address of matrix B
-		la $t3 ($a2) # address of matrix C 
+	la $t2 ($a1) # address of matrix B
+	la $t3 ($a2) # address of matrix C 
 
     # Loop to subtract each element of matrices A and B
  subloop:
@@ -75,26 +78,27 @@ subtract:
 
         # Calculate the memory offset for the current element
         
-        lwc1 $f4, ($s0)            # Load element A[i][j] into $f4
-        lwc1 $f6, ($s1)            # Load element B[i][j] into $f6
+        lwc1 $f4, ($t1)            # Load element A[i][j] into $f4
+        lwc1 $f6, ($t2)            # Load element B[i][j] into $f6
         sub.s $f8, $f4, $f6        # Subtract B[i][j] from A[i][j]
-        swc1 $f8, ($s2)            # Store the result in C[i][j]
-        lwc1 $f12 ($s2)
+        swc1 $f8, ($t3)            # Store the result in C[i][j]
+        
+        
+        lwc1 $f12 ($t3)
         li $v0 2
         syscall
 
         # Repeat the loop
         addi $t0, $t0, 1
-        addi $s0, $s0, 4          # Add 4 to the current address of matrix A
-        addi $s1, $s1, 4          # Add 4 to the current address of matrix B
-        addi $s2, $s2, 4          # Add 4 to the current address of matrix C
+        addi $t1, $t1, 4          # Add 4 to the current address of matrix A
+        addi $t2, $t2, 4          # Add 4 to the current address of matrix B
+        addi $t3, $t3, 4          # Add 4 to the current address of matrix C
 
         j subloop
 
 end_sub_loop:
-    	lw $s0 0($sp)
-        lw $s1 4($sp)
-        lw $s2 8($sp)
-        addi $sp $sp 8 
+    	
+    	lw $ra 0($sp)
+    	addi $sp $sp 4 
         jr $ra    # Return from the function
 

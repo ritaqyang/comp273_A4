@@ -59,22 +59,22 @@ print_float_array:
         jr $ra    # Return from the function
 
 subtract: 	
-	li $t0, 0 #index counter 
+	    li $t0, 0 #index counter 
         addi $sp $sp -4 
         sw $ra 0($sp)
         
         
     # Calculate the number of elements in the matrix (N x N) $t2 has N^2
-        mul $t2, $a3, $a3
+        mul $t4, $a3, $a3
 
         la $t1 ($a0) # address of matrix A
-	la $t2 ($a1) # address of matrix B
-	la $t3 ($a2) # address of matrix C 
+	    la $t2 ($a1) # address of matrix B
+	    la $t3 ($a2) # address of matrix C 
 
     # Loop to subtract each element of matrices A and B
  subloop:
         # Check if we have processed all elements
-        bge $t0, $t2, end_sub_loop     # if we've parsed all elements of matrix 
+        bge $t0, $t4, end_sub_loop     # if we've parsed all elements of matrix 
 
         # Calculate the memory offset for the current element
         

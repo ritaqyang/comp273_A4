@@ -60,17 +60,13 @@ print_float_array:
 
 subtract: 	
 		li $t0, 0 #index counter 
-        addi $sp $sp -8 
-        sw $s0 0($sp)
-        sw $s1 4($sp)
-        sw $s2 8($sp)
-		    
+        
     # Calculate the number of elements in the matrix (N x N) $t2 has N^2
         mul $t2, $a3, $a3
 
-        la $s0 ($a0) # address of matrix A
-		la $s1 ($a1) # address of matrix B
-		la $s2 ($a2) # address of matrix C 
+        la $t1 ($a0) # address of matrix A
+		la $t2 ($a1) # address of matrix B
+		la $t3 ($a2) # address of matrix C 
 
     # Loop to subtract each element of matrices A and B
  subloop:
@@ -95,5 +91,10 @@ subtract:
 
         j subloop
 
-    end_sub_loop:
+end_sub_loop:
+    	lw $s0 0($sp)
+        lw $s1 4($sp)
+        lw $s2 8($sp)
+        addi $sp $sp 8 
         jr $ra    # Return from the function
+

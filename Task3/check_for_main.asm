@@ -1,44 +1,4 @@
-# compute difference by calling subtract(A, B, A, n)
-# so A-B is stored in A 
-# then computes frob norm with (A, n) as inputs 
-
-.data
-    A:      .float 2.0, 4.0, 6.0, 8.0 
- 
-
-    B:      .float 1.0, 2.0, 3.0, 4.0   
-       
-
-    C:      .float 0.0, 0.0, 0.0, 0.0                 # Space for matrix C (3x3 matrix, each element is 4 bytes)
-    array_size:    .word 4  
-    const0: .float 0.0
-
-
-.text
-main:
-    # Call the subtract function
-    la $a0, A          # Load address of matrix A
-    la $a1, B          # Load address of matrix B
-    la $a2, A          # Load address of matrix A to store subtraction result 
-    li $a3, 2          # Set N (size of the matrix)
-
-    jal subtract
-
-  # call frobeneousNorm function 
-    la $a0, A          # Load address of matrix 
-    li $a1, 2          # Set N (size of the matrix)
-    jal frobeneousNorm
-
-    # print $f0 result 
-    li $v0 2
-    mov.s $f12 $f0 
-    syscall 
-
-    # Exit the program
-    li $v0, 10
-    syscall
-
-
+# for adding to the master file 
 ######################################################
 # TODO: void subtract( float* A, float* B, float* C, int N )  C = A - B 
 
@@ -116,24 +76,50 @@ end_frob_loop:
     	lw $ra 0($sp)
     	addi $sp $sp 4 
         jr $ra    
-print_float_array:
-    
-    li $t0, 0 # loop index 
-    la $t1 ($a0) # address of matrix 
-    loop:
-        bge $t0, $a1, end_loop
-        lwc1 $f12 ($t1)
-        li $v0, 2       
-        syscall
 
-        li $v0, 11       # System call code for printing a character
-        li $a0, 32       # ASCII code for space
-        syscall
-        addi $t0, $t0, 1
-        addi $t1, $t1, 4
-        j loop
+ #################################################
+# TODO: void check ( float* C, float* D, int N )
+# Print the forbeneous norm of the difference of C and D
 
-    end_loop:
-        jr $ra    # Return from the function
+# f20: a0 
+# f22: a1 
 
- 
+
+check:
+    # save argument matrices float* C, float* D, int N ) 
+    addi $sp $sp -16 
+    swc1 $f20 0($sp)  
+	swc1 $f22 4($sp)
+    sw $s0 8($sp)
+    sw $ra 12($sp)  # save return address 
+
+    mov.s $f20 $a0 # save argument
+    mov.s $f22 $a1 # save argument 
+    move $s0 $a3 # save arg N 
+
+    # Call the subtract function
+    la $a0, $f20          # Load address of matrix A
+    la $a1, $f22          # Load address of matrix B
+    la $a2, $f20          # Load address of matrix A to store subtraction result 
+    li $a3, 2          # Set N (size of the matrix)
+
+    jal subtract
+
+    # call frobeneousNorm function 
+    la $a0, A          # Load address of matrix 
+    li $a1, 2          # Set N (size of the matrix)
+    jal frobeneousNorm
+
+    # print $f0 result 
+    li $v0 2
+    mov.s $f12 $f0 
+    syscall 
+
+DoneCheck: 
+
+        lwc1 $f20 0($sp)  
+        lwc1 $f22 4($sp)
+        lw $s0 8($sp)
+        lw $ra 12($sp)
+    	addi $sp $sp 16
+        jr $ra 

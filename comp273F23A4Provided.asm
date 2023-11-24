@@ -3,7 +3,7 @@
 # TODO: SEE LABELS FOR PROCEDURES YOU MUST IMPLEMENT AT THE BOTTOM OF THIS FILE
 
 .data
-TestNumber:	.word 1		# TODO: Which test to run!
+TestNumber:	.word 0		# TODO: Which test to run!
 				# 0 compare matrices stored in files Afname and Bfname
 				# 1 test Proc using files A through D named below
 				# 2 compare MADD1 and MADD2 with random matrices of size Size
@@ -56,7 +56,7 @@ compareMatrix:	la $s7 Size
 		move $a2 $s7
 		jal check
 		
-		li $v0 10      	# load exit call code 10 into $v0
+		li $v0 10      				# load exit call code 10 into $v0
         		syscall         	# call operating system to exit	
 
 testFromFile:	la $s7 Size	
@@ -241,7 +241,52 @@ fillZero:	sw $zero 0($a0)	# $zero is zero single precision float
 
 ######################################################
 # TODO: void subtract( float* A, float* B, float* C, int N )  C = A - B 
-subtract: 	jr $ra
+
+subtract: 	
+	    li $t0, 0 # index counter 
+        addi $sp $sp -4 
+        sw $ra 0($sp)
+        
+        
+    # Calculate the number of elements in the matrix (N x N) $t2 has N^2
+        mul $t4, $a3, $a3
+
+        la $t1 ($a0) # address of matrix A
+	    la $t2 ($a1) # address of matrix B
+	    la $t3 ($a2) # address of matrix C 
+
+    # Loop to subtract each element of matrices A and B
+ subloop:
+        # Check if we have processed all elements
+        bge $t0, $t4, end_sub_loop     # if we've parsed all elements of matrix 
+
+        # Calculate the memory offset for the current element
+        
+        lwc1 $f4, ($t1)            # Load element A[i][j] into $f4
+        lwc1 $f6, ($t2)            # Load element B[i][j] into $f6
+        sub.s $f8, $f4, $f6        # Subtract B[i][j] from A[i][j]
+        swc1 $f8, ($t3)            # Store the result in C[i][j]
+        
+        
+        lwc1 $f12 ($t3)
+        li $v0 2
+        syscall
+
+        # Repeat the loop
+        addi $t0, $t0, 1
+        addi $t1, $t1, 4          # Add 4 to the current address of matrix A
+        addi $t2, $t2, 4          # Add 4 to the current address of matrix B
+        addi $t3, $t3, 4          # Add 4 to the current address of matrix C
+
+        j subloop
+
+end_sub_loop:
+    	
+    	lw $ra 0($sp)
+    	addi $sp $sp 4 
+        jr $ra    # Return from the function
+
+
 
 #################################################
 # TODO: float frobeneousNorm( float* A, int N )

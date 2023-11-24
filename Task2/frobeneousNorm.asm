@@ -49,7 +49,8 @@ frobeneousNorm: 	# a0 = A, a1 = n
  frob_loop:
         bge $t0, $t4, end_frob_loop     
         lwc1 $f4, ($t1)            # Load element A[i][j] into $f4
-        add.s $f0, $f4, $f0        # store sum to $f0
+        mul.s $f4 $f4 $f4          # get the square of one element 
+        add.s $f0, $f4, $f0        # store sum to f0
 
         addi $t0, $t0, 1
         addi $t1, $t1, 4          

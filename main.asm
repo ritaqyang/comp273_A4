@@ -12,10 +12,10 @@ Proc:		MADD1		# Procedure used by test 1, set to MADD1 or MADD2
 				
 Size:		.word 64		# matrix size (MUST match size of matrix loaded for test 0 and 1)
 
-Afname: 		.asciiz "A64.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
-Bfname: 		.asciiz "B64.bin"
-Cfname:		.asciiz "C64.bin"
-Dfname:	 	.asciiz "D64.bin"
+Afname: 		.asciiz "A1.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
+Bfname: 		.asciiz "B1.bin"
+Cfname:		.asciiz "C1.bin"
+Dfname:	 	.asciiz "D1.bin"
 const0: .float 0.0
 message1: .asciiz  "in subtraction function"
 message2: .asciiz  "in frob function"
@@ -259,12 +259,14 @@ subtract:
         addi $sp $sp -4 
         sw $ra 0($sp)  # save return address 
         mul $t4, $a3, $a3  # total num of elements N^2
-        la $t1 ($a0) # address of matrix A
-	    la $t2 ($a1) # address of matrix B
-	    la $t3 ($a2) # address of matrix C 
+	
+	move $t1 $a0
+	move $t2 $a1
+	move $t3 $a3 
 
         li $v0 4
-        la $a0 message
+        la $a0 message1
+        syscall 
 
  subloop:
         bge $t0, $t4, end_sub_loop     # if we've parsed all elements of matrix
@@ -279,6 +281,19 @@ subtract:
         syscall
 
         addi $t0, $t0, 1           # increment counter 
+
+         # Print a space
+        li $v0, 11       # System call code for printing a character
+        li $a0, 32       # ASCII code for space
+        syscall
+
+        li $v0 1
+        move $a0 $t0 
+        syscall 
+
+        
+
+
         addi $t1, $t1, 4          # Add 4 to the current address of matrix A
         addi $t2, $t2, 4          # Add 4 to the current address of matrix B
         addi $t3, $t3, 4          # Add 4 to the current address of matrix C
@@ -337,20 +352,25 @@ check:
     # save argument matrices float* C, float* D, int N ) 
     addi $sp $sp -16 
     sw $s1 0($sp)  
-	sw $s2 4($sp)
+   sw $s2 4($sp)
     sw $s0 8($sp)
     sw $ra 12($sp)  # save return address 
 
    
-    move $s0 $a3 # save arg N 
+    move $s0 $a2 # save arg N 
     move $s1 $a0 
-	move $s2 $a1 # address of matrix B
+    move $s2 $a1 
+   
 	
     # Call the subtract function
     move $a0, $s1          # Load address of matrix A
     move $a1, $s2          # Load address of matrix B
     move $a2, $s1          # Load address of matrix A to store subtraction result 
     move $a3, $s0         # Set N (size of the matrix)
+    
+    li $v0 1
+    move $a0 $s0 
+    syscall 
 
     jal subtract
 

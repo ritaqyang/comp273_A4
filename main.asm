@@ -260,9 +260,10 @@ subtract:
         sw $ra 0($sp)  # save return address 
         mul $t4, $a3, $a3  # total num of elements N^2
 	
-	move $t1 $a0
-	move $t2 $a1
-	move $t3 $a3 
+	    la $t1 ($a0) # address of matrix A
+	    la $t2 ($a1) # address of matrix B
+	    la $t3 ($a2) # address of matrix C 
+
 
         li $v0 4
         la $a0 message1
@@ -351,21 +352,21 @@ end_frob_loop:
 check:
     # save argument matrices float* C, float* D, int N ) 
     addi $sp $sp -16 
-    sw $s1 0($sp)  
-   sw $s2 4($sp)
+    swc1 $f20 0($sp) # save A to $f20   
+	swc1 $f22 4($sp) # save B to f22
     sw $s0 8($sp)
     sw $ra 12($sp)  # save return address 
 
    
     move $s0 $a2 # save arg N 
-    move $s1 $a0 
-    move $s2 $a1 
+    mov.s $f20 $a0 
+    mov.s $f22 $a1 
    
 	
     # Call the subtract function
-    move $a0, $s1          # Load address of matrix A
-    move $a1, $s2          # Load address of matrix B
-    move $a2, $s1          # Load address of matrix A to store subtraction result 
+
+  
+    mov.s $a2, $a0          # Load address of matrix A to store subtraction result 
     move $a3, $s0         # Set N (size of the matrix)
     
     li $v0 1

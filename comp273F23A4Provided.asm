@@ -200,7 +200,8 @@ loadMatrix:	mul $t0 $a1 $a2 	# words to read (width x height) in a2
 		syscall		  	# print error message
 		li $v0 10         	# and then exit
 		syscall		
-fileFound:	move $a0 $v0     	# file descriptor (negative if error) as argument for read
+fileFound:	
+		move $a0 $v0     	# file descriptor (negative if error) as argument for read
   		move $a1 $a3     	# address of buffer in which to write
 		move $a2 $t0	  	# number of bytes to read
 		li  $v0 14       	# system call for read from file
@@ -211,7 +212,10 @@ fileFound:	move $a0 $v0     	# file descriptor (negative if error) as argument f
 		# so let's go touch each memory address to refresh it!
 		move $t0 $a3	# start address
 		add $t1 $a3 $a2  	# end address
-loadloop:	lw $t2 ($t0)
+
+
+loadloop:	
+		lw $t2 ($t0)
 		sw $t2 ($t0)
 		addi $t0 $t0 4
 		bne $t0 $t1 loadloop		

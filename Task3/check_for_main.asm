@@ -83,31 +83,30 @@ end_frob_loop:
 
 # f20: a0 
 # f22: a1 
-
-
 check:
     # save argument matrices float* C, float* D, int N ) 
     addi $sp $sp -16 
-    swc1 $f20 0($sp)  
-	swc1 $f22 4($sp)
+    sw $s1 0($sp)  
+	sw $s2 4($sp)
     sw $s0 8($sp)
     sw $ra 12($sp)  # save return address 
 
-    mov.s $f20 $a0 # save argument
-    mov.s $f22 $a1 # save argument 
+   
     move $s0 $a3 # save arg N 
-
+    la $s1 ($a0) # address of matrix A
+	la $s2 ($a1) # address of matrix B
+	
     # Call the subtract function
-    la $a0, $f20          # Load address of matrix A
-    la $a1, $f22          # Load address of matrix B
-    la $a2, $f20          # Load address of matrix A to store subtraction result 
-    li $a3, 2          # Set N (size of the matrix)
+    move $a0, $s1          # Load address of matrix A
+    move $a1, $s2          # Load address of matrix B
+    move $a2, $s1          # Load address of matrix A to store subtraction result 
+    move $a3, $s0         # Set N (size of the matrix)
 
     jal subtract
 
     # call frobeneousNorm function 
-    la $a0, A          # Load address of matrix 
-    li $a1, 2          # Set N (size of the matrix)
+    move $a0, $s1          # Load address of matrix 
+    move $a1, $s0          # Set N (size of the matrix)
     jal frobeneousNorm
 
     # print $f0 result 
@@ -115,10 +114,10 @@ check:
     mov.s $f12 $f0 
     syscall 
 
-DoneCheck: 
 
-        lwc1 $f20 0($sp)  
-        lwc1 $f22 4($sp)
+
+        lw $s1 0($sp)  
+        lw $s2 4($sp)
         lw $s0 8($sp)
         lw $ra 12($sp)
     	addi $sp $sp 16

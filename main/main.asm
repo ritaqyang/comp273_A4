@@ -3,7 +3,7 @@
 # TODO: SEE LABELS FOR PROCEDURES YOU MUST IMPLEMENT AT THE BOTTOM OF THIS FILE
 
 .data
-TestNumber:	.word 0		# TODO: Which test to run!
+TestNumber:	.word 1		# TODO: Which test to run!
 				# 0 compare matrices stored in files Afname and Bfname
 				# 1 test Proc using files A through D named below
 				# 2 compare MADD1 and MADD2 with random matrices of size Size
@@ -12,8 +12,8 @@ Proc:		MADD1		# Procedure used by test 1, set to MADD1 or MADD2
 				
 Size:		.word 64		# matrix size (MUST match size of matrix loaded for test 0 and 1)
 
-Afname: 		.asciiz "A15.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
-Bfname: 		.asciiz "B15.bin"
+Afname: 		.asciiz "A1.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
+Bfname: 		.asciiz "B1.bin"
 Cfname:		.asciiz "C1.bin"
 Dfname:	 	.asciiz "D1.bin"
 const0: .float 0.0
@@ -105,7 +105,17 @@ testFromFile:	la $s7 Size
 		move $a1, $s1	# B
 		move $a2, $s2	# C
 		move $a3, $s7	# n
-		
+		# call MADD1 
+
+		jal MADD1 
+
+		# compare C and D using check function 
+		move $a0, $s2	# C
+		move $a1, $s3	# D
+		move $a2, $s7	# N
+
+		jal check
+
 		la $ra ReturnHere
 		la $t0 Proc	# function pointer
 		lw $t0 ($t0)	
@@ -256,7 +266,7 @@ fillZero:	sw $zero 0($a0)	# $zero is zero single precision float
 
 subtract: 	
         
-	    li $t0, 0 # index counter 
+	li $t0, 0 # index counter 
         mul $t4, $a3, $a3  # total num of elements N^2
 	
         move $t1 $a0 
@@ -271,24 +281,10 @@ subtract:
         bge $t0, $t4, end_sub_loop     # if we've parsed all elements of matrix
         lwc1 $f4, 0($t1)            # Load element A[i][j] into $f4
         lwc1 $f6, 0($t2)            # Load element B[i][j] into $f6
-        sub.s $f8, $f4, $f6        # Subtract B[i][j] from A[i][j]
+        sub.s $f8, $f4, $f6        # f8 = A - B 
         swc1 $f8, 0($t3)            # Store the result in C[i][j]
         
-        
-        
-
         addi $t0, $t0, 1           # increment counter 
-
-         # Print a space
-        li $v0, 11       # System call code for printing a character
-        li $a0, 32       # ASCII code for space
-        syscall
-
-        li $v0 1
-        move $a0 $t0 
-        syscall 
-
-
         addi $t1, $t1, 4          # Add 4 to the current address of matrix A
         addi $t2, $t2, 4          # Add 4 to the current address of matrix B
         addi $t3, $t3, 4          # Add 4 to the current address of matrix C
@@ -304,13 +300,15 @@ end_sub_loop:
 
 frobeneousNorm: 	# a0 = A, a1 = n
 	    li $t0, 0 # index counter 
+	    li $t4, 0 
+	    li $t1, 0 
+	    
     # t0: index 
     # t1: address of matrix 
     # t4: N squared
     # f4: load each element 
     # Calculate the number of elements in the matrix (N x N) $t2 has N^2
         mul $t4, $a1, $a1   
-        
         move $t1 $a0 
         lwc1 $f0 const0  # intialize return value f0 
 	
@@ -333,26 +331,21 @@ end_frob_loop:
 # TODO: void check ( float* C, float* D, int N )
 # Print the forbeneous norm of the difference of C and D
 
-# f20: a0 
-# f22: a1 
-
-
 check:
     # save argument matrices float* C, float* D, int N ) 
     addi $sp $sp -16 
-    sw $s1 0($sp) # save A to $s1    
-	sw $s2 4($sp) # save B to $s2
+    sw $s1 0($sp)     
+    sw $s2 4($sp) 
     sw $s0 8($sp)
     sw $ra 12($sp)  # save return address 
-
-   
     move $s0 $a2 # save arg N 
-    move $s1 $a0 
-    move $s2 $a1 
-   
+    move $s1 $a0 # save C
+    move $s2 $a1 # save D 
 	
     # Call the subtract function
-    move $a2 $a0          # Load address of matrix A to store subtraction result 
+    move $a0 $s1 
+    move $a1 $s2 
+    move $a2 $s1         
     move $a3 $s0         # Set N (size of the matrix)
     jal subtract
 
@@ -366,17 +359,111 @@ check:
     mov.s $f12 $f0 
     syscall 
 
-        lw $s1 0($sp)  
+        lw $s1 0($sp)  # restore save registers after use 
         lw $s2 4($sp)
         lw $s0 8($sp)
-        lw $ra 12($sp)
+        lw $ra 12($sp) # get return address from the stack
     	addi $sp $sp 16
         jr $ra 
 
 ##############################################################
 # TODO: void MADD1( float*A, float* B, float* C, N )
-MADD1: 		jr $ra
 
+# MADD1 function
+# Arguments: $a0 = address of A, $a1 = address of B, $a2 = address of C, $t0 = n
+MADD1:
+    
+    addi $sp $sp -32
+    sw $ra 0($sp)     
+	sw $s0 4($sp) 
+    sw $s1 8($sp)
+    sw $s2 12($sp) 
+    sw $s3 16($sp) 
+    sw $s4 20($sp) 
+    sw $s5 24($sp) 
+    sw $s6 28($sp) 
+
+    li $s0 0 # i 
+    li $s1 0 # j 
+    li $s2 0 # k 
+
+    move $s3 $a0 # A 
+    move $s4 $a1 # B 
+    move $s5 $a2 # C 
+    move $s6 $a3 # n 
+    
+    li $t0 0 
+    li $t1 0 
+    li $t2 0 
+    li $t3 0 
+    
+outer_loop: 
+    bge $s0, $s6, end_outer_loop # Check if i >= n
+    middle_loop:
+        bge $s1, $s6, end_middle_loop # Check if j >= n
+        inner_loop:
+            bge $s2, $s6, end_inner_loop # Check if k >= n
+            # Calculate indices for A[i][k] and C[i][j]
+            mul $t0, $s0, $s6   # i * n
+            add $t1, $t0, $s2   # += k
+            add $t3, $t0, $s1   # i * n + j 
+
+            # multiply t0 by 4 to get the address 
+            sll $t1, $t1, 2 # mult 4 bytes for A's index 
+            sll $t3, $t3, 2 # for C 
+            add $t1, $s3, $t1  # add to address for A
+            add $t3, $s5, $t3 # add to address for C
+
+            # get adress for B
+            mul $t2, $s2, $s6   # k * n
+            add $t2, $t2, $s1  # add j 
+            sll $t2, $t2, 2 # mult 4 bytes for B's index 
+            add $t2, $s4, $t2 # add to address for B
+
+            # now we have A in t1, B in t2, C in t3 
+            lwc1 $f4, 0($t1) # A in f4 
+            lwc1 $f6, 0($t2) # B in f6 
+            lwc1 $f8, 0($t3) # C in f8 
+
+            mul.s $f4 $f4 $f6 # A * B 
+            add.s $f8 $f8 $f4 # C = C+AB 
+            swc1 $f8 0($t3) # C
+
+            # Increment k
+            addi $s2, $s2, 1
+
+      
+
+
+        end_inner_loop:
+
+        # Increment j, reset k to 0 
+        addi $s1, $s1, 1
+        li $s2 0 
+
+        j middle_loop
+
+    end_middle_loop:
+
+    # Increment i, reset j to 0 
+    addi $s0, $s0, 1
+    li $s1 0 
+    j outer_loop
+
+end_outer_loop:
+
+    lw $ra 0($sp)     
+	lw $s0 4($sp) 
+    lw $s1 8($sp)
+    lw $s2 12($sp) 
+    lw $s3 16($sp) 
+    lw $s4 20($sp) 
+    lw $s5 24($sp) 
+    lw $s6 28($sp) 
+    addi $sp $sp 32
+
+
+    jr $ra   
 #########################################################
 # TODO: void MADD2( float*A, float* B, float* C, N )
 MADD2: 		jr   $ra

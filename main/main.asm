@@ -3,7 +3,7 @@
 # TODO: SEE LABELS FOR PROCEDURES YOU MUST IMPLEMENT AT THE BOTTOM OF THIS FILE
 
 .data
-TestNumber:	.word 0		# TODO: Which test to run!
+TestNumber:	.word 1		# TODO: Which test to run!
 				# 0 compare matrices stored in files Afname and Bfname
 				# 1 test Proc using files A through D named below
 				# 2 compare MADD1 and MADD2 with random matrices of size Size
@@ -105,7 +105,17 @@ testFromFile:	la $s7 Size
 		move $a1, $s1	# B
 		move $a2, $s2	# C
 		move $a3, $s7	# n
-		
+		# call MADD1 
+
+		jal MADD1 
+
+		# compare C and D using check function 
+		move $a0, $s2	# C
+		move $a1, $s3	# D
+		move $a2, $s7	# N
+
+		jal check
+
 		la $ra ReturnHere
 		la $t0 Proc	# function pointer
 		lw $t0 ($t0)	

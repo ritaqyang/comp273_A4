@@ -1,0 +1,2 @@
+A15 B15 check result: 6.196641
+A64 B64 check result: 32.38494

@@ -105,16 +105,6 @@ testFromFile:	la $s7 Size
 		move $a1, $s1	# B
 		move $a2, $s2	# C
 		move $a3, $s7	# n
-		# call MADD1 
-
-		jal MADD1 
-
-		# compare C and D using check function 
-		move $a0, $s2	# C
-		move $a1, $s3	# D
-		move $a2, $s7	# N
-
-		jal check
 
 		la $ra ReturnHere
 		la $t0 Proc	# function pointer
@@ -127,7 +117,7 @@ ReturnHere:	move $a0 $s2	# C
 		jal check	# check the answer
 
 		li $v0, 10      	# load exit call code 10 into $v0
-	        	syscall         	# call operating system to exit	
+	        syscall         	# call operating system to exit	
 
 compareMADD:	la $s7 Size
 		lw $s7 ($s7)	# n is loaded from Size

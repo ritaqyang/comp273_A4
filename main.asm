@@ -271,24 +271,10 @@ subtract:
         bge $t0, $t4, end_sub_loop     # if we've parsed all elements of matrix
         lwc1 $f4, 0($t1)            # Load element A[i][j] into $f4
         lwc1 $f6, 0($t2)            # Load element B[i][j] into $f6
-        sub.s $f8, $f4, $f6        # Subtract B[i][j] from A[i][j]
+        sub.s $f8, $f4, $f6        # f8 = A - B 
         swc1 $f8, 0($t3)            # Store the result in C[i][j]
         
-        
-        
-
         addi $t0, $t0, 1           # increment counter 
-
-         # Print a space
-        li $v0, 11       # System call code for printing a character
-        li $a0, 32       # ASCII code for space
-        syscall
-
-        li $v0 1
-        move $a0 $t0 
-        syscall 
-
-
         addi $t1, $t1, 4          # Add 4 to the current address of matrix A
         addi $t2, $t2, 4          # Add 4 to the current address of matrix B
         addi $t3, $t3, 4          # Add 4 to the current address of matrix C
@@ -339,15 +325,15 @@ end_frob_loop:
 check:
     # save argument matrices float* C, float* D, int N ) 
     addi $sp $sp -16 
-    sw $s1 0($sp) # save A to $s1    
-	sw $s2 4($sp) # save B to $s2
+    sw $s1 0($sp)     
+	sw $s2 4($sp) 
     sw $s0 8($sp)
     sw $ra 12($sp)  # save return address 
 
    
     move $s0 $a2 # save arg N 
-    move $s1 $a0 
-    move $s2 $a1 
+    move $s1 $a0 # save C
+    move $s2 $a1 # save D 
    
 	
     # Call the subtract function

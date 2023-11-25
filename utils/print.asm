@@ -6,3 +6,7 @@
         li $v0 1
         move $a0 $t0 
         syscall 
+
+        lwc1 $f12 ($t3)
+        li $v0 2
+        syscall

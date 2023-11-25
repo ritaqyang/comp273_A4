@@ -58,18 +58,42 @@ outer_loop:
 
             # Increment k
             addi $s2, $s2, 1
+
+            # print k 
+            li $v0 1
+            move $a0 $s2 
+            syscall 
+
+            # Print a space
+            li $v0, 11       # System call code for printing a character
+            li $a0, 32       # ASCII code for space
+            syscall
+
+            # print C result 
+            lwc1 $f12 ($t3)
+            li $v0 2
+            syscall
             j inner_loop
+
+            # Print a space
+            li $v0, 11       # System call code for printing a character
+            li $a0, 32       # ASCII code for space
+            syscall
+
 
         end_inner_loop:
 
-        # Increment j
+        # Increment j, reset k to 0 
         addi $s1, $s1, 1
+        li $s2 0 
+
         j middle_loop
 
     end_middle_loop:
 
-    # Increment i
+    # Increment i, reset j to 0 
     addi $s0, $s0, 1
+    li $s1 0 
     j outer_loop
 
 end_outer_loop:

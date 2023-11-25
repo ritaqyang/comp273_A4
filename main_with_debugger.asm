@@ -255,11 +255,11 @@ fillZero:	sw $zero 0($a0)	# $zero is zero single precision float
 # f8: A-B 
 
 subtract: 	
-        
+       
 	    li $t0, 0 # index counter 
         mul $t4, $a3, $a3  # total num of elements N^2
 	
-        move $t1 $a0 
+        move $t1 $a0 # move A,B,C into t1,t2,t3
         move $t2 $a1 
         move $t3 $a2
 
@@ -275,7 +275,9 @@ subtract:
         swc1 $f8, 0($t3)            # Store the result in C[i][j]
         
         
-        
+        lwc1 $f12 ($t3)
+        li $v0 2
+        syscall
 
         addi $t0, $t0, 1           # increment counter 
 
@@ -284,7 +286,7 @@ subtract:
         li $a0, 32       # ASCII code for space
         syscall
 
-        li $v0 1
+        li $v0, 1
         move $a0 $t0 
         syscall 
 
@@ -310,6 +312,7 @@ frobeneousNorm: 	# a0 = A, a1 = n
     # f4: load each element 
     # Calculate the number of elements in the matrix (N x N) $t2 has N^2
         mul $t4, $a1, $a1   
+        
         move $t1 $a0 
         lwc1 $f0 const0  # intialize return value f0 
 	
@@ -346,7 +349,7 @@ check:
 
    
     move $s0 $a2 # save arg N 
-    move $s1 $a0 
+    move #s1 $a0 
     move $s2 $a1 
    
 	

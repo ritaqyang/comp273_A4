@@ -37,6 +37,6 @@ void MADD1(float A, float B, float C, int n)
 
 // i = 1, j = 0 , k = 0
 // c[1][0] += A[1][0] * B[0][0]
-// 0 + 3* 9 = 27 
+//  0 + 3 * 9 = 27 
 
 // ... 

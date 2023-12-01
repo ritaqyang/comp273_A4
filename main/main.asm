@@ -258,7 +258,8 @@ fillZero:	sw $zero 0($a0)	# $zero is zero single precision float
 subtract: 	
         
 	li $t0, 0 # index counter 
-        mul $t4, $a3, $a3  # total num of elements N^2
+		srl $t4, $a3, 2 
+        mul $t4, $t4, $t4  # total num of elements N^2
 	
         move $t1 $a0 
         move $t2 $a1 
@@ -299,7 +300,8 @@ frobeneousNorm: 	# a0 = A, a1 = n
     # t4: N squared
     # f4: load each element 
     # Calculate the number of elements in the matrix (N x N) $t2 has N^2
-        mul $t4, $a1, $a1   
+        srl $t4, $a1, 2 
+        mul $t4, $t4, $t4  # total num of elements N^2
         move $t1 $a0 
         lwc1 $f0 const0  # intialize return value f0 
 	
@@ -382,6 +384,9 @@ MADD1:
     move $s4 $a1 # B 
     move $s5 $a2 # C 
     move $s6 $a3 # n 
+
+	srl $s6 $s6 2 # n /4 
+	
     
     
 outer_loop: 

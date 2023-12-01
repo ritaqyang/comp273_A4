@@ -15,14 +15,14 @@ MADD2:
     sw $s7, 28($sp)
 
     # Initialize loop variables
-    move $s0, $zero  # jj
-    move $s1, $zero  # kk
-    move $s2, $zero  # i
+
+    li $s0 0
+    li $s1 0 
+    li $s2 0 
 
 outer_loop:
     # Check if i >= n
     bge $s2, $a3, end_madd2
-
     move $s3, $zero  # j
 
 middle_loop:

@@ -3,19 +3,19 @@
 # TODO: SEE LABELS FOR PROCEDURES YOU MUST IMPLEMENT AT THE BOTTOM OF THIS FILE
 
 .data
-TestNumber:	.word 1		# TODO: Which test to run!
+TestNumber:	.word 1	# TODO: Which test to run!
 				# 0 compare matrices stored in files Afname and Bfname
 				# 1 test Proc using files A through D named below
 				# 2 compare MADD1 and MADD2 with random matrices of size Size
 				
-Proc:		MADD1		# Procedure used by test 1, set to MADD1 or MADD2		
+Proc:		MADD2		# Procedure used by test 1, set to MADD1 or MADD2		
 				
 Size:		.word 64		# matrix size (MUST match size of matrix loaded for test 0 and 1)
 
-Afname: 		.asciiz "A8.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
-Bfname: 		.asciiz "B8.bin"
-Cfname:		.asciiz "C8.bin"
-Dfname:	 	.asciiz "D8.bin"
+Afname: 		.asciiz "A64.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
+Bfname: 		.asciiz "B64.bin"
+Cfname:		.asciiz "C64.bin"
+Dfname:	 	.asciiz "D64.bin"
 const0: .float 0.0
 bsize: .word 4
 message1: .asciiz  "in subtraction function"
@@ -258,8 +258,8 @@ fillZero:	sw $zero 0($a0)	# $zero is zero single precision float
 
 subtract: 	
         
-	li $t0, 0 # index counter 
-		srl $t4, $a3, 2 
+	    li $t0, 0 # index counter 
+		move $t4,$a3 # store 0 
         mul $t4, $t4, $t4  # total num of elements N^2
 	
         move $t1 $a0 
@@ -301,7 +301,7 @@ frobeneousNorm: 	# a0 = A, a1 = n
     # t4: N squared
     # f4: load each element 
     # Calculate the number of elements in the matrix (N x N) $t2 has N^2
-        srl $t4, $a1, 2 
+        move $t4, $a1 # load N 
         mul $t4, $t4, $t4  # total num of elements N^2
         move $t1 $a0 
         lwc1 $f0 const0  # intialize return value f0 
@@ -385,8 +385,6 @@ MADD1:
     move $s4 $a1 # B 
     move $s5 $a2 # C 
     move $s6 $a3 # n 
-
-	srl $s6 $s6 2 # n /4 
 	
     
     
@@ -396,9 +394,8 @@ outer_loop:
 	middle_loop:
         bge $s1, $s6, end_middle_loop # Check if j >= n
         
-		
 		inner_loop:
-			li $t0 0 
+		li $t0 0 
     		li $t1 0 
     		li $t2 0 
     		li $t3 0 

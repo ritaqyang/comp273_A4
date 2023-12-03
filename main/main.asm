@@ -473,13 +473,16 @@ MADD2:
 	swc1 $f20 32($sp)
 
     li $s0 4 # bsize  
-    li $s1 0 #  
-    li $s2 0 # k 
+    li $s1 0 #   
+    li $s2 0 # 
 
     move $s3 $a0 # A 
     move $s4 $a1 # B 
     move $s5 $a2 # C 
     move $s6 $a3 # n 
+
+	move $t0 $s3 # current A 
+	move $t1 $s4 # current B  
 
         # Loop initialization
         li $t2, 0  # jj
@@ -503,6 +506,7 @@ MADD2:
                             bge $t6, $s6, EndLoopK  # if k >= n, exit loop
 							bge $t6, $s1, EndLoopK  # if k > kk + bsize, exit loop 
 
+
                             # Calculate index for A[i][k]
                             mul $t7, $t4, $s6   # i * n
                             add $t7, $t7, $t6   # i * n + k
@@ -515,14 +519,11 @@ MADD2:
 							sll $t8, $t8, 2 # 4(k * n + j)
 							add $t8, $s4, $t8 # B + 4(k * n + j)
 
-                            # Load A[i][k] and B[k][j] into FPU registers
                             lwc1 $f4, 0($t7) # A[i][k]
                             lwc1 $f6, 0($t8)  # B[k][j]
                             mul.s $f8, $f4, $f6 # A[i][k] * B[k][j]
-                            # Add the result to sum
-                            add.s $f20, $f20, $f8
-                            # Increment k
-                            addi $t6, $t6, 1
+                            add.s $f20, $f20, $f8  # Add the result to sum
+                            addi $t6, $t6, 1 # Increment k
                             j LoopK
 
                         EndLoopK:
@@ -530,7 +531,7 @@ MADD2:
                         # Calculate index for C[i][j]
                         mul $t7, $t4, $s6   # i * n
                         add $t7, $t7, $t5   # i * n + j
-						sll $t7, $t7, 2 # 4(i * n + j)
+						sll $t7, $t7, 2     # 4(i * n + j)
 						add $t7, $t7, $s5   # address = C + 4(i * n + j)
 					
                         lwc1 $f6 0($t7)   # C[i][j] in $f6 
@@ -545,20 +546,16 @@ MADD2:
                     j LoopI
 
                 EndLoopI:
-
-                # Increment kk
-                add $t3, $t3, $t0
+                add $t3, $t3, $s0 # kk + bsize 
                 j LoopKK
 
             EndLoopKK:
-
-            # Increment jj
-            add $t2, $t2, $t0
+            add $t2, $t2, $s0 # jj + bsize 
             j LoopJJ
 
         EndLoopJJ:
 
-        # Function epilogue
+    
         lw $ra 0($sp)     
 	lw $s0 4($sp) 
     lw $s1 8($sp)

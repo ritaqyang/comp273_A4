@@ -1,7 +1,28 @@
 # 260893989, Case, N, InstCnt, MemAccess, Misses, MicroSeconds, HitRate%
-260893989, Naive8Way, 64, 3993924, 532480, 308224, 34815, 42
-260893989, Naive4Way, 64, 3993924, 532480, 273280, 31321, 49
-260893989, NaiveDirect, 64, 3993924, 532480, 274816, 32464, 48
-260893989, Fast8Way, 64, 5031254, 655360, 45312, 9562, 93
-260893989, Fast4Way, 64, 5031254, 655360, 347008, 39731, 47
-260893989, FastDirect, 64, 5031254, 655360, 108160, 15847, 83
+260893989, Naive8Way, 64, 6599133, 1048592, 303686, 36968, 71
+260893989, Naive4Way, 64, 6599133, 1048592, 269190, 33518, 74
+260893989, NaiveDirect, 64, 6599133, 1048592, 328398, 39439, 69
+260893989, Fast8Way, 64, 6250386, 720914, 33799, 9630, 95
+260893989, Fast4Way, 64, 6250386, 720914, 348167, 41067, 52
+260893989, FastDirect, 64, 6250386, 720914, 102776, 16528, 86
+
+
+Compute the time in microseconds assuming a processor that runs at 1 GHz and executes
+one instruction every cycle, and assuming the cache miss penalty to be 100 cycles.
+
+# StudentID, Case, N, InstCnt, MemAccess, Misses, MicroSeconds, HitRate%
+260123456, Naive8Way, 64, 3993924, 532480, 308224, 34815, 42
+260123456, Naive4Way, 64, 3993924, 532480, 273280, 31321, 49
+260123456, NaiveDirect, 64, 3993924, 532480, 274816, 32464, 48
+260123456, Fast8Way, 64, 5031254, 655360, 45312, 9562, 93
+260123456, Fast4Way, 64, 5031254, 655360, 347008, 39731, 47
+260123456, FastDirect, 64, 5031254, 655360, 108160, 15847, 83
+
+To specify the cache configuration, we provide the six settings in the tool reading left
+For instance, on the top line above, we add 100 times the misses to the the instruction count
+and divide by 1000. 
+
+Thus 3993924 plus a penalty of 308224×100 is 34816324 nanoseconds,
+
+Instruction count + miss * 100 
+and when divided by 1000 gives 34816 microseconds.

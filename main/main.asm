@@ -480,55 +480,47 @@ MADD2:
     move $s4 $a1 # B 
     move $s5 $a2 # C 
     move $s6 $a3 # n 
-	srl $s6 $s6 2 # n /4 
 
         # Loop initialization
-        li $t2, 0          # jj
+        li $t2, 0  # jj
         LoopJJ:
             bge $t2, $s6, EndLoopJJ  # if jj >= n, exit outer loop
-
-            li $t3, 0          # kk
+            li $t3, 0  # kk
             LoopKK:
                 bge $t3, $s6, EndLoopKK  # if kk >= n, exit middle loop
-
-                li $t4, 0          # i
+                li $t4, 0 # i
                 LoopI:
                     bge $t4, $s6, EndLoopI  # if i >= n, exit inner loop
-
                     move $t5, $t2       # j = jj
+					add $s2 $t5 $s0   # jj +bsize 
                     LoopJ:
                         bge $t5, $s6, EndLoopJ  # if j >= n, exit loop
-
-                        lwc1 $f20 const0
-
+						bge $t5, $s2, EndLoopJ # if j >= jj+bsize  exit loop
+                        lwc1 $f20 const0 # store sum in f20 
                         move $t6, $t3       # k = kk
 						add $s1 $t6 $s0  # s1 = kk + bsize 
                         LoopK:
                             bge $t6, $s6, EndLoopK  # if k >= n, exit loop
-							bge $t6, $s1, EndLoopK
+							bge $t6, $s1, EndLoopK  # if k > kk + bsize, exit loop 
 
                             # Calculate index for A[i][k]
                             mul $t7, $t4, $s6   # i * n
                             add $t7, $t7, $t6   # i * n + k
-							sll $t7, $t7, 2 # multiply by 4 
-							add $t7, $s3, $t7 
+							sll $t7, $t7, 2 # 4(i * n + k)
+							add $t7, $s3, $t7 # A + 4(i * n + k)
 
                             # Calculate index for B[k][j]
                             mul $t8, $t6, $s6  # k * n
                             add $t8, $t8, $t5   # k * n + j
-							sll $t8, $t8, 2 # multiply by 4 
-							add $t8, $s4, $t8 # add to B's beginning address 
+							sll $t8, $t8, 2 # 4(k * n + j)
+							add $t8, $s4, $t8 # B + 4(k * n + j)
 
                             # Load A[i][k] and B[k][j] into FPU registers
                             lwc1 $f4, 0($t7) # A[i][k]
                             lwc1 $f6, 0($t8)  # B[k][j]
-
-                            # Multiply A[i][k] and B[k][j]
-                            mul.s $f8, $f4, $f6
-
+                            mul.s $f8, $f4, $f6 # A[i][k] * B[k][j]
                             # Add the result to sum
                             add.s $f20, $f20, $f8
-
                             # Increment k
                             addi $t6, $t6, 1
                             j LoopK
@@ -538,27 +530,18 @@ MADD2:
                         # Calculate index for C[i][j]
                         mul $t7, $t4, $s6   # i * n
                         add $t7, $t7, $t5   # i * n + j
-						sll $t7, $t7, 2 
-						add $t7, $t7, $s5
+						sll $t7, $t7, 2 # 4(i * n + j)
+						add $t7, $t7, $s5   # address = C + 4(i * n + j)
 					
-
-                        # Load C[i][j] into FPU register
-                        lwc1 $f6 0($t7)   # C[i][j]
-
-                        # Add sum to C[i][j]
-                        add.s $f6, $f6, $f20
-
-                        # Store the result back to C[i][j]
-                        swc1 $f6, 0($t7)  # C[i][j]
-
-                        # Increment j
-                        addi $t5, $t5, 1
+                        lwc1 $f6 0($t7)   # C[i][j] in $f6 
+                        add.s $f6, $f6, $f20 # add sum from f20 to f6 
+                        swc1 $f6, 0($t7)  # Store the result back to C[i][j]
+                        addi $t5, $t5, 1 # Increment j
                         j LoopJ
 
                     EndLoopJ:
 
-                    # Increment i
-                    addi $t4, $t4, 1
+                    addi $t4, $t4, 1  # Increment i
                     j LoopI
 
                 EndLoopI:

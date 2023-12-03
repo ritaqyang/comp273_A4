@@ -8,7 +8,7 @@ TestNumber:	.word 1		# TODO: Which test to run!
 				# 1 test Proc using files A through D named below
 				# 2 compare MADD1 and MADD2 with random matrices of size Size
 				
-Proc:		MADD2		# Procedure used by test 1, set to MADD1 or MADD2		
+Proc:		MADD1		# Procedure used by test 1, set to MADD1 or MADD2		
 				
 Size:		.word 64		# matrix size (MUST match size of matrix loaded for test 0 and 1)
 
@@ -17,7 +17,7 @@ Bfname: 		.asciiz "B8.bin"
 Cfname:		.asciiz "C8.bin"
 Dfname:	 	.asciiz "D8.bin"
 const0: .float 0.0
-BlockSize: .word 4
+bsize: .word 4
 message1: .asciiz  "in subtraction function"
 message2: .asciiz  "in frob function"
 #################################################################
@@ -461,105 +461,132 @@ end_outer_loop:
 # TODO: void MADD2( float*A, float* B, float* C, N )
 # cache size is 4 words per block
 # so we access everything that's already in the cache 
-MADD2: 	
+MADD2:
+    addi $sp $sp -36
+    sw $ra 0($sp)     
+	sw $s0 4($sp) 
+    sw $s1 8($sp)
+    sw $s2 12($sp) 
+    sw $s3 16($sp) 
+    sw $s4 20($sp) 
+    sw $s5 24($sp) 
+    sw $s6 28($sp) 
+	swc1 $f20 32($sp)
+
+    li $s0 4 # bsize  
+    li $s1 0 #  
+    li $s2 0 # k 
+
+    move $s3 $a0 # A 
+    move $s4 $a1 # B 
+    move $s5 $a2 # C 
+    move $s6 $a3 # n 
+	srl $s6 $s6 2 # n /4 
+
+        # Loop initialization
+        li $t2, 0          # jj
+        LoopJJ:
+            bge $t2, $s6, EndLoopJJ  # if jj >= n, exit outer loop
+
+            li $t3, 0          # kk
+            LoopKK:
+                bge $t3, $s6, EndLoopKK  # if kk >= n, exit middle loop
+
+                li $t4, 0          # i
+                LoopI:
+                    bge $t4, $s6, EndLoopI  # if i >= n, exit inner loop
+
+                    move $t5, $t2       # j = jj
+                    LoopJ:
+                        bge $t5, $s6, EndLoopJ  # if j >= n, exit loop
+
+                        lwc1 $f20 const0
+
+                        move $t6, $t3       # k = kk
+						add $s1 $t6 $s0  # s1 = kk + bsize 
+                        LoopK:
+                            bge $t6, $s6, EndLoopK  # if k >= n, exit loop
+							bge $t6, $s1, EndLoopK
+
+                            # Calculate index for A[i][k]
+                            mul $t7, $t4, $s6   # i * n
+                            add $t7, $t7, $t6   # i * n + k
+							sll $t7, $t7, 2 # multiply by 4 
+							add $t7, $s3, $t7 
+
+                            # Calculate index for B[k][j]
+                            mul $t8, $t6, $s6  # k * n
+                            add $t8, $t8, $t5   # k * n + j
+							sll $t8, $t8, 2 # multiply by 4 
+							add $t8, $s4, $t8 # add to B's beginning address 
+
+                            # Load A[i][k] and B[k][j] into FPU registers
+                            lwc1 $f4, 0($t7) # A[i][k]
+                            lwc1 $f6, 0($t8)  # B[k][j]
+
+                            # Multiply A[i][k] and B[k][j]
+                            mul.s $f8, $f4, $f6
+
+                            # Add the result to sum
+                            add.s $f20, $f20, $f8
+
+                            # Increment k
+                            addi $t6, $t6, 1
+                            j LoopK
+
+                        EndLoopK:
+
+                        # Calculate index for C[i][j]
+                        mul $t7, $t4, $s6   # i * n
+                        add $t7, $t7, $t5   # i * n + j
+						sll $t7, $t7, 2 
+						add $t7, $t7, $s5
+					
+
+                        # Load C[i][j] into FPU register
+                        lwc1 $f6 0($t7)   # C[i][j]
+
+                        # Add sum to C[i][j]
+                        add.s $f6, $f6, $f20
+
+                        # Store the result back to C[i][j]
+                        swc1 $f6, 0($t7)  # C[i][j]
+
+                        # Increment j
+                        addi $t5, $t5, 1
+                        j LoopJ
+
+                    EndLoopJ:
+
+                    # Increment i
+                    addi $t4, $t4, 1
+                    j LoopI
+
+                EndLoopI:
+
+                # Increment kk
+                add $t3, $t3, $t0
+                j LoopKK
+
+            EndLoopKK:
+
+            # Increment jj
+            add $t2, $t2, $t0
+            j LoopJJ
+
+        EndLoopJJ:
+
+        # Function epilogue
+        lw $ra 0($sp)     
+	lw $s0 4($sp) 
+    lw $s1 8($sp)
+    lw $s2 12($sp) 
+    lw $s3 16($sp) 
+    lw $s4 20($sp) 
+    lw $s5 24($sp) 
+    lw $s6 28($sp) 
+	lwc1 $f20 32($sp)
+    addi $sp $sp 36
 
 
-		addi $sp $sp -36
-		sw $ra 0($sp)     
-		sw $s0 4($sp) 
-		sw $s1 8($sp)
-		sw $s2 12($sp) 
-		sw $s3 16($sp) 
-		sw $s4 20($sp) 
-		sw $s5 24($sp) 
-		sw $s6 28($sp) 
-		sw $s7 32($sp) 
-
-		move $s3 $a0 # A 
-		move $s4 $a1 # B 
-		move $s5 $a2 # C 
-		move $s6 $a3 # n 
-		
-		srl $s7 $s6 2 # n/4
-		mul $s7 $s7 $s7 # n^2 
-		sll $s7 $s7 2 # 4n^2 
-
-
-		add $s0 $s5 $s6 # beginning of next row 
-		add $s1 $s3 $s6 # when all row = i of C is done A will be at $s1 
-		
-		add $s2 $s7 $s3 # final end point for MADD 
-
-		
-
-
-JLoop: 
-		
-		# get the sum for c[i][j]
-		lwc1 $f4, 0($s3) # load A[i][k] 
-		lwc1 $f6, 0($s4) # load B[k][j]
-		lwc1 $f8, 0($s5) # load C[i][j] 
-		mul.s $f6 $f4 $f6 # get A[i][k] * B[k][j]
-		add.s $f8 $f6 $f8 # c[i][j] += A[i][k] *B[k][j]
-		
-		
-		addi $s5 $s5 4 # move to C[i][j+1]
-		beq $s5 $s0 Increment_K # if we reached the end of the row for C 
-		addi $s4 $s4 4 # move to B[k][j+1]  
-		lwc1 $f6, 0($s4) # load B[k][j+1]
-		lwc1 $f8, 0($s5) # load C[i][j+1] 
-		mul.s $f6 $f4 $f6 # get A[i][k] *B[k][j+1]
-		add.s $f8 $f6 $f8 # c[i][j+1] += A[i][k] *B[k][j+1]
-		swc1 $f8 0($s5) # store new value for C
-
-		
-		addi $s5 $s5 4 # move to C[i][j+2]
-		beq $s5 $s0 Increment_K # if we reached the end of the row for C  
-		addi $s4 $s4 4 # move to B[k][j+2] 
-		lwc1 $f6, 0($s4) # load B[k][j+2]
-		lwc1 $f8, 0($s5) # load C[i][j+2] 
-		mul.s $f6 $f4 $f6 # get A[i][k] *B[k][j+2]
-		add.s $f8 $f6 $f8  # c[i][j+2] += A[i][k] *B[k][j+2]
-		swc1 $f8 0($s5) # store new value for C
-
-		
-		addi $s5 $s5 4 # move to C[i][j+3]
-		beq $s5 $s0 Increment_K # if we reached the end of the row for C  
-		addi $s4 $s4 4 # move to B[k][j+3] 
-		lwc1 $f6, 0($s4) # load B[k][j+3]
-		lwc1 $f8, 0($s5) # load C[i][j+3] 
-		mul.s $f6 $f4 $f6 # get A[i][k] *B[k][j+3]
-		add.s $f8 $f6 $f8 # c[i][j+3] += A[i][k] *B[k][j+3]
-		swc1 $f8 0($s5) # store new value for C
-
-		bne $s5 $s0 JLoop
-
-		
-Increment_K: 
-		addi $s3 $s3 4 # move to next A[i][k+1]
-		addi $s4 $s4 4 # move to B[k+1][0] 
-		beq $s3 $s1 Increment_i # A[i+1][0] we incremnet row 
-		sub $s5 $s5 $s6 # move C back to the front of the row for next k 
-		jal JLoop 
-
-Increment_i: 
-		add $s0 $s5 $s6 # update beginning of next row end point for C
-		add $s1 $s3 $s6 # update end point A[i+1][0] + n = A[i+1][k]
-		sub $s4 $s4 $s7 # move B back [0][0] for k = 0 and j = 0 
-		beq $s1 $s2 end_i_loop # if reach final endpoint 
-		jal JLoop
-
-		
-end_i_loop: 
-		lw $ra 0($sp)     
-		lw $s0 4($sp) 
-		lw $s1 8($sp)
-		lw $s2 12($sp) 
-		lw $s3 16($sp) 
-		lw $s4 20($sp) 
-		lw $s5 24($sp) 
-		lw $s6 28($sp) 
-		lw $s7 32($sp) 
-		addi $sp $sp 36
-
-		jr $ra   
+    jr $ra   

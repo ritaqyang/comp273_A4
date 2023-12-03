@@ -1,82 +1,119 @@
-# Assuming A, B, and C are pointers and n is an integer
-# A is in $a0, B is in $a1, C is in $a2, n is in $a3
-# Assuming BLOCK_SIZE is a constant value
+.data
+    A: .space 1024     # Assuming 4x4 matrices (4x4x4 = 64 bytes for A)
+    B: .space 1024     # Assuming 4x4 matrices (4x4x4 = 64 bytes for B)
+    C: .space 1024     # Assuming 4x4 matrices (4x4x4 = 64 bytes for C)
+    n: .word 4         # Assuming n is 4
+    bsize: .word 4     # Block size
+
+.text
+    main:
+        la $a0, A       # Load address of matrix A
+        la $a1, B       # Load address of matrix B
+        la $a2, C       # Load address of matrix C
+        lw $a3, n       # Load n
+        lw $t0, bsize   # Load block size
+
+        jal MADD2       # Jump to MADD2 function
+
+        # Exit program
+        li $v0, 10
+        syscall
 
 MADD2:
-    # Save callee-saved registers
-    addi $sp, $sp, -32
-    sw $s0, 0($sp)
-    sw $s1, 4($sp)
-    sw $s2, 8($sp)
-    sw $s3, 12($sp)
-    sw $s4, 16($sp)
-    sw $s5, 20($sp)
-    sw $s6, 24($sp)
-    sw $s7, 28($sp)
+        # Function prologue
+        addi $sp, $sp, -12
+        sw $ra, 0($sp)
+        sw $f20, 4($sp)
+        sw $s1, 8($sp)
 
-    # Initialize loop variables
+        # Loop initialization
+        li $t2, 0          # jj
+        LoopJJ:
+            bge $t2, $a3, EndLoopJJ  # if jj >= n, exit outer loop
 
-    li $s0 0
-    li $s1 0 
-    li $s2 0 
+            li $t3, 0          # kk
+            LoopKK:
+                bge $t3, $a3, EndLoopKK  # if kk >= n, exit middle loop
 
-outer_loop:
-    # Check if i >= n
-    bge $s2, $a3, end_madd2
-    move $s3, $zero  # j
+                li $t4, 0          # i
+                LoopI:
+                    bge $t4, $a3, EndLoopI  # if i >= n, exit inner loop
 
-middle_loop:
-    # Check if j >= min(jj + BLOCK_SIZE, n)
-    bge $s3, $a3, next_i
+                    li $t5, $t2       # j = jj
+                    LoopJ:
+                        bge $t5, $a3, EndLoopJ  # if j >= n, exit loop
 
-    li.s $f4, 0.0  # sum
+                        lwc1 $f20 const0
 
-    move $s4, $zero  # k
+                        li $t6, $t3       # k = kk
+                        LoopK:
+                            bge $t6, $a3, EndLoopK  # if k >= n, exit loop
 
-inner_loop:
-    # Check if k >= min(kk + BLOCK_SIZE, n)
-    bge $s4, $a3, next_j
+                            # Calculate index for A[i][k]
+                            mul $t7, $t4, $a3   # i * n
+                            add $t7, $t7, $t6   # i * n + k
 
-    # Compute A[i][k] * B[k][j] and accumulate in sum
-    lw $t0, 0($a0)        # Load A[i][k]
-    lw $t1, 0($a1)        # Load B[k][j]
-    mul.s $f5, $f6, $f7   # Multiply A[i][k] and B[k][j]
-    add.s $f4, $f4, $f5   # Accumulate in sum
+                            # Calculate index for B[k][j]
+                            mul $t8, $t6, $a3   # k * n
+                            add $t8, $t8, $t5   # k * n + j
 
-    # Move to the next element in A and B
-    addi $a0, $a0, 4
-    addi $a1, $a1, 4
+                            # Load A[i][k] and B[k][j] into FPU registers
+                            lwc1 $f4, 0($t7) # A[i][k]
+                            lwc1 $f6, 0($t8)  # B[k][j]
 
-    # Move to the next iteration of the inner loop
-    addi $s4, $s4, 1
-    j inner_loop
+                            # Multiply A[i][k] and B[k][j]
+                            mul.s $f8, $f4, $f6
 
-next_j:
-    # Store the result in C[i][j]
-    s.s $f4, 0($a2)
+                            # Add the result to sum
+                            add.s $f20, $f20, $f8
 
-    # Move to the next element in C
-    addi $a2, $a2, 4
+                            # Increment k
+                            addi $t6, $t6, 1
+                            j LoopK
 
-    # Move to the next iteration of the middle loop
-    addi $s3, $s3, 1
-    j middle_loop
+                        EndLoopK:
 
-next_i:
-    # Move to the next iteration of the outer loop
-    addi $s2, $s2, 1
-    j outer_loop
+                        # Calculate index for C[i][j]
+                        mul $t9, $t4, $a3   # i * n
+                        add $t9, $t9, $t5   # i * n + j
 
-end_madd2:
-    # Restore callee-saved registers
-    lw $s0, 0($sp)
-    lw $s1, 4($sp)
-    lw $s2, 8($sp)
-    lw $s3, 12($sp)
-    lw $s4, 16($sp)
-    lw $s5, 20($sp)
-    lw $s6, 24($sp)
-    lw $s7, 28($sp)
-    addi $sp, $sp, 32
+                        # Load C[i][j] into FPU register
+                        lwc1 $f6 0($t9)   # C[i][j]
 
-    jr $ra  # Return
+                        # Add sum to C[i][j]
+                        add.s $f6, $f6, $f20
+
+                        # Store the result back to C[i][j]
+                        swc1 $f6, 0($t9)  # C[i][j]
+
+                        # Increment j
+                        addi $t5, $t5, 1
+                        j LoopJ
+
+                    EndLoopJ:
+
+                    # Increment i
+                    addi $t4, $t4, 1
+                    j LoopI
+
+                EndLoopI:
+
+                # Increment kk
+                addi $t3, $t3, $t0
+                j LoopKK
+
+            EndLoopKK:
+
+            # Increment jj
+            addi $t2, $t2, $t0
+            j LoopJJ
+
+        EndLoopJJ:
+
+        # Function epilogue
+        lw $ra, 0($sp)
+        lw $f20, 4($sp)
+        lw $s1, 8($sp)
+        addi $sp, $sp, 12
+
+        jr $ra  # Return

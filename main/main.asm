@@ -8,14 +8,14 @@ TestNumber:	.word 1	# TODO: Which test to run!
 				# 1 test Proc using files A through D named below
 				# 2 compare MADD1 and MADD2 with random matrices of size Size
 				
-Proc:		MADD2		# Procedure used by test 1, set to MADD1 or MADD2		
+Proc:		MADD1		# Procedure used by test 1, set to MADD1 or MADD2		
 				
-Size:		.word 64		# matrix size (MUST match size of matrix loaded for test 0 and 1)
+Size:		.word 8		# matrix size (MUST match size of matrix loaded for test 0 and 1)
 
-Afname: 		.asciiz "A64.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
-Bfname: 		.asciiz "B64.bin"
-Cfname:		.asciiz "C64.bin"
-Dfname:	 	.asciiz "D64.bin"
+Afname: 		.asciiz "A8.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
+Bfname: 		.asciiz "B8.bin"
+Cfname:		.asciiz "C8.bin"
+Dfname:	 	.asciiz "D8.bin"
 const0: .float 0.0
 bsize: .word 4
 message1: .asciiz  "in subtraction function"
@@ -399,6 +399,7 @@ outer_loop:
     		li $t1 0 
     		li $t2 0 
     		li $t3 0 
+			
             bge $s2, $s6, end_inner_loop # Check if k >= n
             # Calculate indices for A[i][k] and C[i][j]
             mul $t0, $s0, $s6   # i * n
@@ -415,6 +416,7 @@ outer_loop:
             add $t2, $t2, $s1  # k * n + j 
             sll $t2, $t2, 2 # 4(k * n + j)
             add $t2, $s4, $t2 # B + 4(k * n + j)
+
 
             # now we have A[i][k] in t1, B[k][j] in t2, C[i][j] in t3 
             lwc1 $f4, 0($t1) # A[i][k] in f4 

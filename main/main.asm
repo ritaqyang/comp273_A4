@@ -8,15 +8,16 @@ TestNumber:	.word 1		# TODO: Which test to run!
 				# 1 test Proc using files A through D named below
 				# 2 compare MADD1 and MADD2 with random matrices of size Size
 				
-Proc:		MADD1		# Procedure used by test 1, set to MADD1 or MADD2		
+Proc:		MADD2		# Procedure used by test 1, set to MADD1 or MADD2		
 				
 Size:		.word 64		# matrix size (MUST match size of matrix loaded for test 0 and 1)
 
-Afname: 		.asciiz "A1.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
-Bfname: 		.asciiz "B1.bin"
-Cfname:		.asciiz "C1.bin"
-Dfname:	 	.asciiz "D1.bin"
+Afname: 		.asciiz "A8.bin"  # 64 = 2^6   64x64x4 = 2^(6+6+2) = 2^14 = 8K?
+Bfname: 		.asciiz "B8.bin"
+Cfname:		.asciiz "C8.bin"
+Dfname:	 	.asciiz "D8.bin"
 const0: .float 0.0
+BlockSize: .word 4
 message1: .asciiz  "in subtraction function"
 message2: .asciiz  "in frob function"
 #################################################################
@@ -407,7 +408,6 @@ outer_loop:
             add $t1, $t0, $s2   # i * n + k 
             add $t3, $t0, $s1   # i * n + j 
 
-            # multiply t0 by 4 to get the address 
             sll $t1, $t1, 2 # 4(i * n + k)
             sll $t3, $t3, 2 # 4(i * n + j)
             add $t1, $s3, $t1  # A + 4(i * n + k)
@@ -459,4 +459,107 @@ end_outer_loop:
     jr $ra   
 #########################################################
 # TODO: void MADD2( float*A, float* B, float* C, N )
-MADD2: 		jr   $ra
+# cache size is 4 words per block
+# so we access everything that's already in the cache 
+MADD2: 	
+
+
+		addi $sp $sp -36
+		sw $ra 0($sp)     
+		sw $s0 4($sp) 
+		sw $s1 8($sp)
+		sw $s2 12($sp) 
+		sw $s3 16($sp) 
+		sw $s4 20($sp) 
+		sw $s5 24($sp) 
+		sw $s6 28($sp) 
+		sw $s7 32($sp) 
+
+		move $s3 $a0 # A 
+		move $s4 $a1 # B 
+		move $s5 $a2 # C 
+		move $s6 $a3 # n 
+		
+		srl $s7 $s6 2 # n/4
+		mul $s7 $s7 $s7 # n^2 
+		sll $s7 $s7 2 # 4n^2 
+
+
+		add $s0 $s5 $s6 # beginning of next row 
+		add $s1 $s3 $s6 # when all row = i of C is done A will be at $s1 
+		
+		add $s2 $s7 $s3 # final end point for MADD 
+
+		
+
+
+JLoop: 
+		
+		# get the sum for c[i][j]
+		lwc1 $f4, 0($s3) # load A[i][k] 
+		lwc1 $f6, 0($s4) # load B[k][j]
+		lwc1 $f8, 0($s5) # load C[i][j] 
+		mul.s $f6 $f4 $f6 # get A[i][k] * B[k][j]
+		add.s $f8 $f6 $f8 # c[i][j] += A[i][k] *B[k][j]
+		
+		
+		addi $s5 $s5 4 # move to C[i][j+1]
+		beq $s5 $s0 Increment_K # if we reached the end of the row for C 
+		addi $s4 $s4 4 # move to B[k][j+1]  
+		lwc1 $f6, 0($s4) # load B[k][j+1]
+		lwc1 $f8, 0($s5) # load C[i][j+1] 
+		mul.s $f6 $f4 $f6 # get A[i][k] *B[k][j+1]
+		add.s $f8 $f6 $f8 # c[i][j+1] += A[i][k] *B[k][j+1]
+		swc1 $f8 0($s5) # store new value for C
+
+		
+		addi $s5 $s5 4 # move to C[i][j+2]
+		beq $s5 $s0 Increment_K # if we reached the end of the row for C  
+		addi $s4 $s4 4 # move to B[k][j+2] 
+		lwc1 $f6, 0($s4) # load B[k][j+2]
+		lwc1 $f8, 0($s5) # load C[i][j+2] 
+		mul.s $f6 $f4 $f6 # get A[i][k] *B[k][j+2]
+		add.s $f8 $f6 $f8  # c[i][j+2] += A[i][k] *B[k][j+2]
+		swc1 $f8 0($s5) # store new value for C
+
+		
+		addi $s5 $s5 4 # move to C[i][j+3]
+		beq $s5 $s0 Increment_K # if we reached the end of the row for C  
+		addi $s4 $s4 4 # move to B[k][j+3] 
+		lwc1 $f6, 0($s4) # load B[k][j+3]
+		lwc1 $f8, 0($s5) # load C[i][j+3] 
+		mul.s $f6 $f4 $f6 # get A[i][k] *B[k][j+3]
+		add.s $f8 $f6 $f8 # c[i][j+3] += A[i][k] *B[k][j+3]
+		swc1 $f8 0($s5) # store new value for C
+
+		bne $s5 $s0 JLoop
+
+		
+Increment_K: 
+		addi $s3 $s3 4 # move to next A[i][k+1]
+		addi $s4 $s4 4 # move to B[k+1][0] 
+		beq $s3 $s1 Increment_i # A[i+1][0] we incremnet row 
+		sub $s5 $s5 $s6 # move C back to the front of the row for next k 
+		jal JLoop 
+
+Increment_i: 
+		add $s0 $s5 $s6 # update beginning of next row end point for C
+		add $s1 $s3 $s6 # update end point A[i+1][0] + n = A[i+1][k]
+		sub $s4 $s4 $s7 # move B back [0][0] for k = 0 and j = 0 
+		beq $s1 $s2 end_i_loop # if reach final endpoint 
+		jal JLoop
+
+		
+end_i_loop: 
+		lw $ra 0($sp)     
+		lw $s0 4($sp) 
+		lw $s1 8($sp)
+		lw $s2 12($sp) 
+		lw $s3 16($sp) 
+		lw $s4 20($sp) 
+		lw $s5 24($sp) 
+		lw $s6 28($sp) 
+		lw $s7 32($sp) 
+		addi $sp $sp 36
+
+		jr $ra   

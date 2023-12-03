@@ -473,16 +473,16 @@ MADD2:
 	swc1 $f20 32($sp)
 
     li $s0 4 # bsize  
-    li $s1 0 #   
-    li $s2 0 # 
+    li $s1 0 # zero before use  
+    li $s2 0 # zero before use 
 
     move $s3 $a0 # A 
     move $s4 $a1 # B 
     move $s5 $a2 # C 
     move $s6 $a3 # n 
 
-	move $t0 $s5 # current C 
-	move $t1 $s4 # i * n 
+	li $t0  0 # zero before use  
+	li $t1  0 # zero before use 
 
         # Loop initialization
         li $t2, 0  # jj
@@ -494,53 +494,48 @@ MADD2:
                 li $t4, 0 # i
                 LoopI:
                     bge $t4, $s6, EndLoopI  # if i >= n, exit inner loop
-					mul $t1, $t4, $s6   # i * n
-					
-					add $t0, $t1, $t2   # i * n + j
-					sll $t0, $t0, 2     # 4(i * n + j)
-					add $t0, $t0, $s5   # C + 4(i * n + j) in t0 
-					
-					add $s2 $t2 $s0   # s2 = jj + bsize 
-					move $t5 $t2  # j = jj 
-
+                    move $t5, $t2       # j = jj
+					add $s2 $t5 $s0   # jj +bsize 
                     LoopJ:
                         bge $t5, $s6, EndLoopJ  # if j >= n, exit loop
 						bge $t5, $s2, EndLoopJ # if j >= jj+bsize  exit loop
                         lwc1 $f20 const0 # store sum in f20 
-						
-						
-						mul $t8, $t6, $s6  # k * n
-                        add $t8, $t8, $t5   # k * n + j
-						sll $t8, $t8, 2 # 4(k * n + j)
-						add $t8, $s4, $t8 # B + 4(k * n + j) 
-
-						move $t6, $t3       # k = kk
+                        move $t6, $t3       # k = kk
 						add $s1 $t6 $s0  # s1 = kk + bsize 
-						add $t7, $t1, $t6   # i * n + k
-						add $t7, $s3, $t7	 # A + 4(i * n + k)
-						
-			
                         LoopK:
                             bge $t6, $s6, EndLoopK  # if k >= n, exit loop
-							bge $t6, $s1, EndLoopK  # if k >= kk + bsize, exit loop 
-                       
+							bge $t6, $s1, EndLoopK  # if k > kk + bsize, exit loop 
+
+                            # Calculate index for A[i][k]
+                            mul $t7, $t4, $s6   # i * n
+                            add $t7, $t7, $t6   # i * n + k
+							sll $t7, $t7, 2 # 4(i * n + k)
+							add $t7, $s3, $t7 # A + 4(i * n + k)
+
+                            # Calculate index for B[k][j]
+                            mul $t8, $t6, $s6  # k * n
+                            add $t8, $t8, $t5   # k * n + j
+							sll $t8, $t8, 2 # 4(k * n + j)
+							add $t8, $s4, $t8 # B + 4(k * n + j)
+
                             lwc1 $f4, 0($t7) # A[i][k]
                             lwc1 $f6, 0($t8)  # B[k][j]
-							
-							mul.s $f8, $f4, $f6 # A[i][k] * B[k][j]
-                            add.s $f20, $f20, $f8  # sum += A[i][k] * B[k][j]
-							addi $t6, $t6, 1 # Increment k
-							addi $t7, $t7, 4
-							add $t8 $t8 $s6 # B[k+1][j]
+                            mul.s $f8, $f4, $f6 # A[i][k] * B[k][j]
+                            add.s $f20, $f20, $f8  # Add the result to sum
+                            addi $t6, $t6, 1 # Increment k
                             j LoopK
-                        
-						EndLoopK:
 
-                        
-                        lwc1 $f6 0($t0)   # C[i][j] in $f6 
+                        EndLoopK:
+
+                        # Calculate index for C[i][j]
+                        mul $t7, $t4, $s6   # i * n
+                        add $t7, $t7, $t5   # i * n + j
+						sll $t7, $t7, 2     # 4(i * n + j)
+						add $t7, $t7, $s5   # address = C + 4(i * n + j)
+					
+                        lwc1 $f6 0($t7)   # C[i][j] in $f6 
                         add.s $f6, $f6, $f20 # add sum from f20 to f6 
-                        swc1 $f6, 0($t0)  # Store the result back to C[i][j]
-						addi $t0, $t0, 4 # C[i][j+1]
+                        swc1 $f6, 0($t7)  # Store the result back to C[i][j]
                         addi $t5, $t5, 1 # Increment j
                         j LoopJ
 

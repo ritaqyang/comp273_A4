@@ -1,0 +1,19 @@
+OddParity checksums in hexadecimal:
+
+example0.txt: A9
+example1.txt: B8
+plain0.txt: 9E
+plain1.txt: A1
+plain2.txt: A0
+plain3.txt: FE
+plain5.txt: AE
+
+Complement checksums in hexadecimal:
+
+example0.txt: 28
+example1.txt: 7B
+plain0.txt: 39
+plain1.txt: CC
+plain2.txt: 47
+plain3.txt: 19
+plain5.txt: 57
